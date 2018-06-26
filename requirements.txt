@@ -1,0 +1,7 @@
+# google-api-python-client
+# google-auth
+# netaddr
+# oauth2client
+# pycrypto==2.6.1
+# requests
+# requests-toolbelt
