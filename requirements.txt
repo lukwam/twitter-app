@@ -1,5 +1,9 @@
-# google-api-python-client
-# google-auth
+# enum34
+google-api-python-client
+# google-appengine
+google-auth
+# google-cloud-datastore
+# grpcio
 # netaddr
 # oauth2client
 # pycrypto==2.6.1

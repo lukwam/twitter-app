@@ -102,3 +102,8 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+convert_p12.sh
+service_account.p12
+service_account.pem
+tmp/

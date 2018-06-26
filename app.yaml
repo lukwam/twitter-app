@@ -37,12 +37,15 @@ handlers:
 
 # [START libraries]
 libraries:
-- name: webapp2
-  version: latest
+# - name: grpcio
+#   version: latest
 - name: jinja2
   version: latest
-- name: pycrypto
-  version: 2.6
-- name: ssl
+# - name: pycrypto
+#   version: 2.6
+# - name: ssl
+#   version: latest
+- name: webapp2
   version: latest
+
 # [END libraries]
