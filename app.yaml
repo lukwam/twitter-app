@@ -13,6 +13,7 @@ skip_files:
 - ^(.*/)?#.*#$
 - ^(.*/)?setuptools/script \(dev\).tmpl$
 - ^gcloud(.*)config
+- ^tmp/
 #[END_EXCLUDE]
 
 # [START handlers]

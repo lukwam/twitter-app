@@ -9,3 +9,4 @@ google-auth
 # pycrypto==2.6.1
 # requests
 # requests-toolbelt
+python-twitter

@@ -104,8 +104,21 @@ class SettingsPage(webapp2.RequestHandler):
         self.response.write(render_theme(body=body))
 
 
+class UpdatePage(webapp2.RequestHandler):
+    """UpdatePage class."""
+
+    def get(self):
+        """Return content for update page."""
+        # get settings from datastore
+        settings = helpers.get_settings()
+        template = JINJA_ENVIRONMENT.get_template('settings.html')
+        body = template.render()
+        self.response.write(render_theme(body=body))
+
+
 app = webapp2.WSGIApplication([
     (r'/', MainPage),
     (r'/admin', AdminPage),
     (r'/admin/settings', SettingsPage),
+    (r'/admin/update', UpdatePage)
 ], debug=True)
