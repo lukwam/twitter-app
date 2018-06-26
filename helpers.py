@@ -25,8 +25,8 @@ class Twitter(object):
         friends = []
         for user in self.api.GetFriends(user):
             user = user.AsDict()
-            uid = user['id']
-            key = ndb.Key('Friend', uid)
+            # uid = user['id']
+            # key = ndb.Key('Friend', uid)
             entity = datastore.Entity(key)
             entity['screen_name'] = user['screen_name']
             for k in user:

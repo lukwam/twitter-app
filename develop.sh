@@ -17,9 +17,9 @@ sudo docker run -it --rm \
       -A ${APP} \
       --admin_host 0.0.0.0 \
       --admin_port 8000 \
+      --api_port 8081 \
       --appidentity_email_address=${APP}@appspot.gserviceaccount.com \
       --appidentity_private_key_path=service_account.pem \
-      --api_port 8081 \
       --datastore_path /local/datastore/${APP} \
       --host 0.0.0.0 \
       --port 8080 \
