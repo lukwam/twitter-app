@@ -1,6 +1,6 @@
 #!/bin/sh
 
-gcloud config set project karlsson-twitter
+PROJECT="lukwam-twitter"
 
-# deploy the app engine app
-gcloud -q app deploy app.yaml
+gcloud --project="${PROJECT}" app deploy -q
+

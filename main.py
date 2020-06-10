@@ -1,124 +1,120 @@
-#!/usr/bin/env python
-"""BITSdb App main."""
+# -*- coding: utf-8 -*-
+"""People App main file."""
 
-import jinja2
-import os
-import webapp2
+import json
+import twitter
 
-# from google.appengine.api import memcache
-from google.appengine.api import users
-from google.appengine.ext import ndb
-# from google.cloud import datastore
+from flask import Flask, redirect, render_template
+from google.cloud import firestore
 
-import google.auth
-import helpers
-
-JINJA_ENVIRONMENT = jinja2.Environment(
-    loader=jinja2.FileSystemLoader('templates'),
-    extensions=['jinja2.ext.autoescape'],
-    autoescape=True)
+app = Flask(__name__)
 
 
-credentials, project_id = google.auth.default()
-
-def is_dev():
-    """Return true if this is the development environment."""
-    dev = False
-    if os.environ['SERVER_SOFTWARE'].startswith('Development'):
-        dev = True
-    return dev
+def _get_settings():
+    """Return a dict of settings."""
+    client = firestore.Client()
+    return client.collection("settings").document("twitter").get().to_dict()
 
 
-def render_theme(body):
-    """Render the main template header and footer."""
-    template = JINJA_ENVIRONMENT.get_template('theme.html')
-    return template.render(
-        body=body,
-        email=users.get_current_user().email(),
-        is_admin=users.is_current_user_admin(),
-        is_dev=is_dev(),
+def connect():
+    settings = _get_settings()
+    return twitter.Api(
+        consumer_key=settings["consumer_key"],
+        consumer_secret=settings["consumer_secret"],
+        access_token_key=settings["access_token_key"],
+        access_token_secret=settings["access_token_secret"]
     )
 
 
-class AdminPage(webapp2.RequestHandler):
-    """Admin page class."""
-
-    def get(self):
-        """Return content for admin page."""
-        template = JINJA_ENVIRONMENT.get_template('admin.html')
-        template_values = {}
-        body = template.render(template_values)
-        self.response.write(render_theme(body=body))
+def render_theme(body):
+    """Return the body rendered in the template theme."""
+    return render_template(
+        "theme.html",
+        body=body,
+    )
 
 
-class MainPage(webapp2.RequestHandler):
-    """MainPage class."""
-
-    def get(self):
-        """Return content for main page."""
-        template = JINJA_ENVIRONMENT.get_template('index.html')
-        template_values = {}
-        body = template.render(template_values)
-        self.response.write(render_theme(body=body))
+def save_follower(follower):
+    """Save a friend in Firestore."""
+    client = firestore.Client()
+    index = follower.id_str
+    data = follower.AsDict()
+    return client.collection("followers").document(index).set(data)
 
 
-class SettingsPage(webapp2.RequestHandler):
-    """SettingsPage class."""
-
-    def get(self):
-        """Return content for settings page."""
-        # get settings from datastore
-        params = helpers.get_settings()
-        template = JINJA_ENVIRONMENT.get_template('settings.html')
-        body = template.render(**params)
-        self.response.write(render_theme(body=body))
-
-    def post(self):
-        """Return content for settings page."""
-        # get settings from post data
-        post_data = self.request.POST
-        consumer_key = post_data.get('consumer_key')
-        consumer_secret = post_data.get('consumer_secret')
-        access_token_key = post_data.get('access_token_key')
-        access_token_secret = post_data.get('access_token_secret')
-
-        # create entity
-        entity = helpers.Settings(
-            id='config',
-            consumer_key=consumer_key,
-            consumer_secret=consumer_secret,
-            access_token_key=access_token_key,
-            access_token_secret=access_token_secret,
-        )
-
-        # save entity
-        entity.put()
-
-        template = JINJA_ENVIRONMENT.get_template('settings.html')
-        body = template.render(
-            consumer_key=consumer_key,
-            consumer_secret=consumer_secret,
-            access_token_key=access_token_key,
-            access_token_secret=access_token_secret,
-        )
-        self.response.write(render_theme(body=body))
+def save_friend(friend):
+    """Save a friend in Firestore."""
+    client = firestore.Client()
+    index = friend.id_str
+    data = friend.AsDict()
+    return client.collection("friends").document(index).set(data)
 
 
-class UpdatePage(webapp2.RequestHandler):
-    """UpdatePage class."""
+@app.route("/")
+def index():
+    """Return the main Index page."""
+    api = connect()
+    try:
+        user = api.VerifyCredentials()
+        print(f"Screen Name: {user.screen_name}")
+    except Exception as e:
+        print("ERROR: Failed to verify Twitter credentials.")
+        return redirect("/auth")
 
-    def get(self):
-        """Return content for update page."""
-        # get settings from datastore
-        settings = helpers.get_settings()
-        template = JINJA_ENVIRONMENT.get_template('settings.html')
-        body = template.render()
-        self.response.write(render_theme(body=body))
+    body = render_template(
+        "index.html",
+    )
+    return render_theme(body)
 
 
-app = webapp2.WSGIApplication([
-    (r'/', MainPage),
-    (r'/admin', AdminPage),
-    (r'/admin/settings', SettingsPage),
-    (r'/admin/update', UpdatePage)
-], debug=True)
+@app.route("/auth")
+def auth():
+    """Return the main Index page."""
+    api = connect()
+    body = render_template(
+        "auth.html",
+    )
+    return render_theme(body)
+
+
+@app.route("/update/followers")
+def update_followers():
+    """Update the list of followers."""
+    api = connect()
+    user = api.VerifyCredentials()
+
+    count = 0
+    for follower in api.GetFollowers(user.screen_name):
+        count += 1
+        save_follower(follower)
+        print(f"{count} {follower.screen_name}")
+
+    body = render_template(
+        "update_followers.html",
+    )
+    return render_theme(body)
+
+
+@app.route("/update/friends")
+def update_friends():
+    """Update the list of friends."""
+    api = connect()
+    user = api.VerifyCredentials()
+
+    count = 0
+    for friend in api.GetFriends(user.screen_name):
+        count += 1
+        save_friend(friend)
+        print(f"{count} {friend.screen_name}")
+
+    body = render_template(
+        "update_friends.html",
+    )
+    return render_theme(body)
+
+
+# used for local development
+if __name__ == "__main__":
+    DEBUG = True
+
+    app.run(host="0.0.0.0", port=8080, debug=DEBUG)
